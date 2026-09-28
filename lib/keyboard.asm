@@ -3,7 +3,7 @@ bits 16
 
 COMMAND_BUFF_ERR_OVERFLOW equ 0x1
 
-MSG_OVERFLOW db 10, 13, "Error [Overflow]: The command is too long.", 10, 13, 0
+MSG_BUFF_OVERFLOW db 10, 13, "Error [Buffer Overflow]: The command is too long.", 10, 13, 0
 
 COMMAND_BUFFER_SIZE equ 64
 command_buffer:
@@ -94,7 +94,7 @@ call buffer_clear
 .overflow:
 	call buffer_clear
 
-	mov si, MSG_OVERFLOW
+	mov si, MSG_BUFF_OVERFLOW
 	call print_str
 
 	mov di, COMMAND_BUFF_ERR_OVERFLOW

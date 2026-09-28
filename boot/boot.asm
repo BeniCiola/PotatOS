@@ -12,7 +12,7 @@ mov es, ax
 mov bx, 0000h
 
 mov ah, 0x02
-mov al, 0x01
+mov al, 0x04
 
 mov dl, [boot_drive]
 mov cl, 0x02

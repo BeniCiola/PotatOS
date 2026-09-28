@@ -27,3 +27,4 @@ start:
 %include "lib/commands/commands.asm"
 %include "lib/print.asm"
 %include "lib/keyboard.asm"
+%include "EFS/efs.asm"
