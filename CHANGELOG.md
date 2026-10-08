@@ -63,14 +63,40 @@
 - Su formato es el clásico 8.3 de DOS: 8 caracteres de nombre, y 3 caracteres sí o sí de formato
 
 ### Ramas nuevas
-- PotatOS/EFS/
+- PotatOS/EFS/: Archivos del sistema Electron File System
 
-### Archivos nuevos
+### Archivos importantes nuevos
 - EFS/bytemap.dat
 - EFS/directory.dat
 - EFS/efs.asm
 - EFS/old_efs.asm (extra)
 
+### Comandos agregados:
+- touch archivo: Crea un archivo con nombre y extensión.
+- rm archivo: Borra un archivo creado.
+
 ### Notas
 - Había dejado PotatOS tirado porque había perdido el interés en este proyecto.
 - Lo vuelvo a retomar porque encontré de nuevo la inspiración en mi alma, y mi cariño es más poderoso que la frustración.
+
+## Kernel 0.2.0
+
+### Agregado
+- Se añadió Onan, un programa que aporta la posibilidad de modificar el contenido de un archivo.
+- Compatibilidad de booteo que permite su arranque en hardware real.
+
+### Archivos importantes modificados
+- EFS/efs.asm: Nueva forma de diseño con sistema Disk Access Packet.
+- lib/print.asm: Nueva función para limpiar la pantalla.
+- boot/boot.asm: Modificación para compatibilidad con hardware real.
+
+### Ramas nuevas
+- PotatOS/programs/: Programas del sistema.
+
+### Archivos importantes nuevos
+- programs/onan.asm: Sistema de edición de texto, dado su nombre por ser una copia barata de Nano, Linux.
+- keyboard.asm: Lleva todas las funciones del teclado.
+
+### Comandos nuevos
+- onan archivo: Entra a un archivo para modificarlo con el programa Onan.
+

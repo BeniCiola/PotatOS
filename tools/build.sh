@@ -22,7 +22,7 @@ executer_pro_max() {
 
 	if [ ${execute,,} == "y" ]; then
 		echo "Running PotatOS..."
-		qemu-system-i386 -drive format=raw,file=potatos.img,if=floppy
+		qemu-system-i386 -drive format=raw,file=potatos.img
 		exit 0
 
 	elif [ ${execute,,} == "n" ]; then

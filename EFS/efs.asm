@@ -3,6 +3,12 @@ bits 16
 FILE_ERROR_UNEXIST equ 0x03
 DIR_ERROR_OVERFLOW equ 0x02
 
+EFS_DATA_START equ 10
+EFS_ENTRY_SIZE equ 32
+EFS_ENTRY_SECTOR equ 12
+
+file_buffer equ 0xA000
+
 MSG_FILE_UNEXIST db 10, 13, \
     "Error [File Unexist]: The file doesn't exist in the directory", \
     10, 13, 0
@@ -19,31 +25,32 @@ MSG_EXTENSION_INVALID db 10, 13, \
 efs_create_file:
     mov bp, si
 
-    mov si, bytemap
-    xor di, di
+    mov bx, bytemap
+    mov di, EFS_DATA_START
 
 .byte_loop:
     cmp di, 512
     jae .bytemap_full
 
-    cmp byte [si], 0x00
+    cmp byte [bx + di], 0x00
     je .create
 
-    inc si
     inc di
-
     jmp .byte_loop
+
 
 .bytemap_full:
     ret
 
-.create:
-    mov byte [si], 0xFF
 
-    mov cx, di
+.create:
+    mov byte [bx + di], 0xFF
+
+    push di
 
     mov di, root_dir
     mov si, di
+
 
 .dir_loop:
     mov ax, si
@@ -55,15 +62,16 @@ efs_create_file:
     cmp byte [si], 0x00
     je .meta
 
-    add si, 32
-
+    add si, EFS_ENTRY_SIZE
     jmp .dir_loop
+
 
 .meta:
     mov di, si
 
     mov byte [si], 0xFF
     inc si
+
 
 .meta_name_loop:
     mov al, [ds:bp]
@@ -80,6 +88,7 @@ efs_create_file:
 
     jmp .meta_name_loop
 
+
 .filler_loop:
     mov ax, si
     sub ax, di
@@ -92,8 +101,14 @@ efs_create_file:
 
     jmp .filler_loop
 
+
 .skip_filler:
+    pop ax
+    mov word [di + EFS_ENTRY_SECTOR], ax
+
+    push ax
     push cx
+
     xor cx, cx
 
     mov al, [ds:bp]
@@ -102,6 +117,7 @@ efs_create_file:
     jne .meta_exten_loop
 
     inc bp
+
 
 .meta_exten_loop:
     mov al, [ds:bp]
@@ -121,27 +137,37 @@ efs_create_file:
     cmp ax, 12
     jb .meta_exten_loop
 
+
 .check_extension:
     cmp cx, 3
     jb .invalid_extension
 
     pop cx
-    jmp efs_write_disk
+    pop ax
+
+    jmp efs_write_metadata
+
 
 .invalid_extension:
     pop cx
+    pop ax
 
-    mov si, bytemap
-    add si, cx
-    mov byte [si], 0x00
+    mov bx, bytemap
+    add bx, ax
+    mov byte [bx], 0x00
 
     mov si, MSG_EXTENSION_INVALID
     call print_str
 
     ret
 
+
 .overflow:
-    mov byte [si], 0x00
+    pop ax
+
+    mov bx, bytemap
+    add bx, ax
+    mov byte [bx], 0x00
 
     mov di, DIR_ERROR_OVERFLOW
     mov si, MSG_DIR_OVERFLOW
@@ -151,48 +177,65 @@ efs_create_file:
     ret
 
 
-efs_write_disk:
-    pusha
-    push ds
-
-    mov ax, cs
-    mov ds, ax
-    mov es, ax
-
-    mov bx, bytemap
-    mov ah, 03h
-    mov al, 1
-    mov ch, 0
-    mov cl, 6
-    mov dh, 0
-    mov dl, 0
-    int 13h
+efs_write_metadata:
+    call efs_write_bytemap
     jc .disk_error
 
-    mov bx, root_dir
-    mov ah, 03h
-    mov al, 1
-    mov ch, 0
-    mov cl, 5
-    mov dh, 0
-    mov dl, 0
-    int 13h
+    call efs_write_root_dir
     jc .disk_error
 
-    pop ds
-    popa
     clc
     ret
 
 .disk_error:
-    pop ds
-    popa
     stc
+    ret
+
+
+efs_write_bytemap:
+    mov bx, bytemap
+    mov ax, 6
+    call efs_write_sector
+    ret
+
+
+efs_write_root_dir:
+    mov bx, root_dir
+    mov ax, 5
+    call efs_write_sector
     ret
 
 
 efs_delete_file:
     mov bp, si
+
+    call efs_file_finder
+    jc .file_unexist
+
+    mov ax, [si + EFS_ENTRY_SECTOR]
+
+    mov bx, bytemap
+    add bx, ax
+    mov byte [bx], 0x00
+
+    mov byte [si], 0x00
+
+    call efs_write_metadata
+
+    ret
+
+
+.file_unexist:
+    mov di, FILE_ERROR_UNEXIST
+    mov si, MSG_FILE_UNEXIST
+    call print_str
+    ret
+
+
+efs_file_finder:
+    mov bx, current_filename
+    mov bp, bx
+
 
     mov si, root_dir
     xor di, di
@@ -206,6 +249,7 @@ efs_delete_file:
 
     push si
     inc si
+
     mov bx, bp
 
 .verify_file_loop:
@@ -225,8 +269,10 @@ efs_delete_file:
 
     jmp .verify_file_loop
 
+
 .verify_extension:
     inc bx
+
 
 .skip_name:
     cmp byte [si], 0x20
@@ -234,6 +280,7 @@ efs_delete_file:
 
     inc si
     jmp .skip_name
+
 
 .extension_loop:
     mov al, [bx]
@@ -249,26 +296,167 @@ efs_delete_file:
 
     jmp .extension_loop
 
-.not_match:
-    pop si
-
-.next_entry:
-    add si, 32
-    add di, 32
-    jmp .dir_loop
 
 .file_found:
     pop si
-
-    mov byte [si], 0x00
+    clc
     ret
+
+
+.not_match:
+    pop si
+
+
+.next_entry:
+    add si, EFS_ENTRY_SIZE
+    add di, EFS_ENTRY_SIZE
+
+    jmp .dir_loop
+
 
 .file_unexist:
-    mov di, FILE_ERROR_UNEXIST
-    mov si, MSG_FILE_UNEXIST
-    call print_str
+    stc
     ret
 
+
+efs_load_file:
+    call efs_file_finder
+    jc .file_unexist
+
+    mov ax, [si + EFS_ENTRY_SECTOR]
+
+    mov bx, file_buffer
+    call efs_read_sector
+    jc .disk_error
+
+    mov si, file_buffer
+    clc
+    ret
+
+
+.file_unexist:
+    mov si, MSG_FILE_UNEXIST
+    call print_str
+    stc
+    ret
+
+
+.disk_error:
+    stc
+    ret
+
+
+efs_save_file:
+    call efs_file_finder
+    jc .file_unexist
+
+    mov ax, [si + EFS_ENTRY_SECTOR]
+
+    mov bx, file_buffer
+    call efs_write_sector
+    jc .disk_error
+
+    clc
+    ret
+
+
+.file_unexist:
+    mov si, MSG_FILE_UNEXIST
+    call print_str
+    stc
+    ret
+
+
+.disk_error:
+    stc
+    ret
+
+
+efs_read_sector:
+    mov word [dap.sector_count], 1
+
+    mov word [dap.buffer_offset], bx
+    mov word [dap.buffer_segment], cs
+
+    mov word [dap.lba_low], ax
+    mov word [dap.lba_high], 0
+    mov word [dap.lba_high2], 0
+    mov word [dap.lba_high3], 0
+
+    mov si, dap
+
+    mov ah, 0x42
+    mov dl, 0x80
+
+    int 13h
+    jc .error
+
+    clc
+    ret
+
+.error:
+    stc
+    ret
+
+
+efs_write_sector:
+    mov word [dap.sector_count], 1
+
+    mov word [dap.buffer_offset], bx
+    mov word [dap.buffer_segment], cs
+
+    mov word [dap.lba_low], ax
+    mov word [dap.lba_high], 0
+    mov word [dap.lba_high2], 0
+    mov word [dap.lba_high3], 0
+
+    mov si, dap
+
+    mov ah, 0x43
+    mov dl, 0x80
+
+    int 13h
+    jc .error
+
+    clc
+    ret
+
+.error:
+    stc
+    ret
+
+
+dap:
+    db 0x10
+    db 0x00
+
+.sector_count:
+    dw 0x0001
+
+.buffer_offset:
+    dw 0x0000
+
+.buffer_segment:
+    dw 0x0000
+
+.lba_low:
+    dw 0x0000
+
+.lba_high:
+    dw 0x0000
+
+.lba_high2:
+    dw 0x0000
+
+.lba_high3:
+    dw 0x0000
+
+
+current_filename:
+	times 12 db 0
+
+;file_buffer:
+;    times 512 db 0
 
 bytemap:
     incbin "EFS/bytemap.dat"

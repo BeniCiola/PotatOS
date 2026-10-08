@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import os
+
 files = ["boot/boot.bin", "kernel/kernel.bin"]
 image_file = "potatos.img"
 
@@ -19,3 +21,10 @@ with open(image_file, "wb") as image:
 			file_data += zero_completer
 
 		image.write(file_data)
+
+tamanio_minimo = (1 + 20) * 512
+tamanio_actual = os.path.getsize(image_file)
+
+if tamanio_actual < tamanio_minimo:
+    with open(image_file, "ab") as image:
+        image.write(b'\x00' * (tamanio_minimo - tamanio_actual))

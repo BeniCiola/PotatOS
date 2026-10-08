@@ -3,7 +3,7 @@ org 0
 
 jmp start
 
-MSG_BOOT db "Welcome to PotatOS", 13, 10, "Kernel 0.1.0v", 13, 10, 0
+MSG_BOOT db "Welcome to PotatOS", 13, 10, "Kernel 0.2.0v", 13, 10, 0
 TERMINAL_PROMPT db ">", 0
 
 start:
@@ -27,4 +27,5 @@ start:
 %include "lib/commands/commands.asm"
 %include "lib/print.asm"
 %include "lib/keyboard.asm"
+%include "programs/onan.asm"
 %include "EFS/efs.asm"
