@@ -95,20 +95,22 @@ call buffer_clear
 
 TXT_NOT_FOUND db "Error [commands]: This command doesn't exist.", 10, 13, 0
 
-TXT_COMMAND_CLEAR db "clear", 0
 TXT_COMMAND_HELP db "help", 0
+TXT_COMMAND_CLEAR db "clear", 0
 TXT_COMMAND_TOUCH db "touch ", 0
 TXT_COMMAND_RM db "rm ", 0
-TXT_COMMAND_RESTART db "restart", 0
+TXT_COMMAND_LS db "ls", 0
 TXT_COMMAND_ONAN db "onan ", 0
+TXT_COMMAND_RESTART db "restart", 0
 
 command_table:
-	dw TXT_COMMAND_CLEAR, command_clear
 	dw TXT_COMMAND_HELP, command_help
+	dw TXT_COMMAND_CLEAR, command_clear
     dw TXT_COMMAND_TOUCH, command_touch
 	dw TXT_COMMAND_RM, command_remove
-	dw TXT_COMMAND_RESTART, command_restart
+	dw TXT_COMMAND_LS, command_ls
 	dw TXT_COMMAND_ONAN, command_onan
+	dw TXT_COMMAND_RESTART, command_restart
 	dw 0
 
 command_compare:
@@ -172,9 +174,10 @@ command_compare:
 .overflow_detector:
     ret
 
-%include "lib/commands/clear.asm"
 %include "lib/commands/help.asm"
+%include "lib/commands/clear.asm"
 %include "lib/commands/touch.asm"
 %include "lib/commands/remove.asm"
-%include "lib/commands/restart.asm"
+%include "lib/commands/ls.asm"
 %include "lib/commands/onan.asm"
+%include "lib/commands/restart.asm"
