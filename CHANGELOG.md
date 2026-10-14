@@ -100,3 +100,10 @@
 ### Comandos nuevos
 - onan archivo: Entra a un archivo para modificarlo con el programa Onan.
 
+## Kernel 0.2.1
+
+### Arreglos
+- 'touch' ahora limpia el sector antes de otorgarlo al archivo.
+
+### Mejoras
+- Onan ahora tiene enter, VAMOOOOOOO.

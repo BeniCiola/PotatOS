@@ -3,13 +3,19 @@ org 0
 
 jmp start
 
-MSG_BOOT db "Welcome to PotatOS", 13, 10, "Kernel 0.2.0v", 13, 10, 0
+boot_drive db 0
+
+MSG_BOOT db "Welcome to PotatOS", 13, 10, "Kernel 0.2.1v", 13, 10, 0
 TERMINAL_PROMPT db ">", 0
 
 start:
+	pop bx
+
 	mov ax, cs
 	mov ds, ax
 	mov es, ax
+
+	mov [boot_drive], bl
 
 	mov si, MSG_BOOT
 	call print_str

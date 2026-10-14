@@ -46,6 +46,12 @@ efs_create_file:
 .create:
     mov byte [bx + di], 0xFF
 
+	push di
+	mov ax, di
+	call efs_clear_sector
+
+	pop di
+
     push di
 
     mov di, root_dir
@@ -175,6 +181,35 @@ efs_create_file:
     call print_str
 
     ret
+
+efs_clear_sector:
+	push ax
+	push bx
+	push cx
+	push di
+	push es
+
+	push ds
+	pop es
+
+	mov di, sector_buffer
+	xor ax, ax
+	mov cx, 256
+	cld
+	rep stosw
+
+	pop es
+	pop di
+	pop cx
+	pop bx
+	pop ax
+
+	mov bx, sector_buffer
+	call efs_write_sector
+	ret
+
+sector_buffer:
+	times 512 db 0
 
 
 efs_write_metadata:
@@ -386,7 +421,7 @@ efs_read_sector:
     mov si, dap
 
     mov ah, 0x42
-    mov dl, 0x80
+    mov dl, [boot_drive]
 
     int 13h
     jc .error
@@ -413,7 +448,7 @@ efs_write_sector:
     mov si, dap
 
     mov ah, 0x43
-    mov dl, 0x80
+    mov dl, [boot_drive]
 
     int 13h
     jc .error

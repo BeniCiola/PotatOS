@@ -37,6 +37,8 @@ code:
 
     jc .disk_error
 
+	push [boot_drive]
+
     jmp 0x0800:0x0000
 
 .disk_error:
